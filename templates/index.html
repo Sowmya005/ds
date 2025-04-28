@@ -1,0 +1,136 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diet and Workout Recommender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4 max-w-2xl">
+        <h1 class="text-3xl font-bold text-center mb-6">Diet and Workout Recommender</h1>
+        
+        <!-- Error Message -->
+        {% if error %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {{ error }}
+            </div>
+        {% endif %}
+        
+        <!-- Input Form -->
+        <form method="POST" class="bg-white p-6 rounded shadow-md">
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Sex</label>
+                    <select name="sex" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Age</label>
+                    <input type="number" name="age" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Height (m)</label>
+                    <input type="number" name="height" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                    <input type="number" name="weight" step="0.1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Hypertension</label>
+                    <select name="hypertension" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Diabetes</label>
+                    <select name="diabetes" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Level</label>
+                    <select name="level" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="Underweight">Underweight</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Overweight">Overweight</option>
+                        <option value="Obuse">Obese</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Fitness Goal</label>
+                    <select name="fitness_goal" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="Weight Gain">Weight Gain</option>
+                        <option value="Weight Loss">Weight Loss</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Fitness Type</label>
+                    <select name="fitness_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="Muscular Fitness">Muscular Fitness</option>
+                        <option value="Cardio Fitness">Cardio Fitness</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                Get Recommendation
+            </button>
+        </form>
+        
+        <!-- Recommendation Output -->
+        {% if recommendation %}
+            <div class="mt-6 bg-white p-6 rounded shadow-md">
+                <h2 class="text-2xl font-semibold mb-4">Your Recommendation</h2>
+                <p><strong>Exercises:</strong> {{ recommendation.Exercises }}</p>
+                <p><strong>Equipment:</strong> {{ recommendation.Equipment }}</p>
+                <p><strong>Diet:</strong> {{ recommendation.Diet }}</p>
+                <p><strong>Recommendation:</strong> {{ recommendation.Recommendation }}</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
