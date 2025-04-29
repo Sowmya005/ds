@@ -10,7 +10,7 @@ app = Flask(__name__)
 # Load and preprocess the dataset
 def load_data():
     try:
-        df = pd.read_csv('gym recommendation(1).csv')
+        df = pd.read_csv('gym recommendation.csv')
         # Drop ID column as it's not needed for recommendations
         df = df.drop(columns=['ID'])
         return df
